@@ -5,36 +5,61 @@ import (
 	"github.com/gotk3/gotk3/gtk"
 	"log"
 	"os"
+	"sync"
 )
 
-type Window struct {
+type AppWindow struct {
+	Application       *gtk.Application
+	ApplicationWindow *gtk.ApplicationWindow
+	SearchBar         *gtk.Entry
+	Box               *gtk.Box
 }
 
-func createApplication() *gtk.Application {
+func createApplication(engine *Engine, wg *sync.WaitGroup) {
 	const appID = "org.gtk.example"
 	application, err := gtk.ApplicationNew(appID, glib.APPLICATION_FLAGS_NONE)
 	if err != nil {
 		log.Fatal("Could not create application.", err)
 	}
 
-	// Application signals available
-	// startup -> sets up the application when it first starts
-	// activate -> shows the default first window of the application (like a new document). This corresponds to the application being launched by the desktop environment.
-	// open -> opens files and shows them in a new window. This corresponds to someone trying to open a document (or documents) using the application from the file browser, or similar.
-	// shutdown ->  performs shutdown tasks
-	// Setup activate signal with a closure function.
 	application.Connect("activate", func() {
 		appWindow, err := gtk.ApplicationWindowNew(application)
 		if err != nil {
 			log.Fatal("Could not create application window.", err)
 		}
 		appWindow.SetTitle("Basic Application.")
-		appWindow.SetDefaultSize(400, 400)
+		appWindow.SetDefaultSize(1000, 800)
+		box := setupBox(gtk.ORIENTATION_VERTICAL)
+		appWindow.Add(box)
+		engine.Window.Box = box
 		appWindow.Show()
 	})
-	return application
+	engine.Window.Application = application
+	wg.Done()
 }
 
-func start(application *gtk.Application) {
+func startApplication(application *gtk.Application) {
 	application.Run(os.Args)
+}
+
+func setupBox(orient gtk.Orientation) *gtk.Box {
+	box, err := gtk.BoxNew(orient, 0)
+	if err != nil {
+		log.Fatal("Unable to create box:", err)
+	}
+	return box
+}
+
+func setupSearch(engine Engine) {
+	println("setup search")
+	entry, err := gtk.EntryNew()
+	if err != nil {
+		log.Fatal("Unable to create search", err)
+	}
+	engine.Window.Box.Add(entry)
+	engine.Window.SearchBar = entry
+	engine.Window.SearchBar.Connect("activate", func() {
+		println("searchbarclicked")
+	})
+	engine.Window.ApplicationWindow.ShowAll()
 }
