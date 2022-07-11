@@ -1,6 +1,6 @@
 package main
 
 func main() {
-	var engine = createEngine()
-	startEngine(engine)
+	window := AppWindow{}
+	createApplication(window)
 }

@@ -4,8 +4,6 @@ import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
-	"os"
-	"sync"
 )
 
 type AppWindow struct {
@@ -15,51 +13,54 @@ type AppWindow struct {
 	Box               *gtk.Box
 }
 
-func createApplication(engine *Engine, wg *sync.WaitGroup) {
+func createApplication(window AppWindow) {
 	const appID = "org.gtk.example"
+	gtk.Init(nil)
 	application, err := gtk.ApplicationNew(appID, glib.APPLICATION_FLAGS_NONE)
 	if err != nil {
 		log.Fatal("Could not create application.", err)
 	}
+	window.Application = application
+	setupWindow(&window)
+	setupBox(&window, gtk.ORIENTATION_VERTICAL)
+	setupSearch(&window)
+	gtk.Main()
+}
 
-	application.Connect("activate", func() {
-		appWindow, err := gtk.ApplicationWindowNew(application)
-		if err != nil {
-			log.Fatal("Could not create application window.", err)
-		}
-		appWindow.SetTitle("Basic Application.")
-		appWindow.SetDefaultSize(1000, 800)
-		box := setupBox(gtk.ORIENTATION_VERTICAL)
-		appWindow.Add(box)
-		engine.Window.Box = box
-		appWindow.Show()
+func setupWindow(window *AppWindow) {
+	win, err := gtk.ApplicationWindowNew(window.Application)
+	if err != nil {
+		println("Could not create application window")
+	}
+	win.SetTitle("KEPLER")
+	win.Connect("destroy", func() {
+		gtk.MainQuit()
 	})
-	engine.Window.Application = application
-	wg.Done()
+	win.SetDefaultSize(1000, 800)
+	window.ApplicationWindow = win
 }
 
-func startApplication(application *gtk.Application) {
-	application.Run(os.Args)
-}
-
-func setupBox(orient gtk.Orientation) *gtk.Box {
+func setupBox(window *AppWindow, orient gtk.Orientation) {
 	box, err := gtk.BoxNew(orient, 0)
 	if err != nil {
 		log.Fatal("Unable to create box:", err)
 	}
-	return box
+	window.ApplicationWindow.Add(box)
+	window.Box = box
 }
 
-func setupSearch(engine Engine) {
+func setupSearch(window *AppWindow) {
 	println("setup search")
 	entry, err := gtk.EntryNew()
 	if err != nil {
 		log.Fatal("Unable to create search", err)
 	}
-	engine.Window.Box.Add(entry)
-	engine.Window.SearchBar = entry
-	engine.Window.SearchBar.Connect("activate", func() {
-		println("searchbarclicked")
+	window.Box.Add(entry)
+	window.SearchBar = entry
+	window.SearchBar.Connect("activate", func() {
+		println(window.SearchBar.GetText())
+		url, _ := window.SearchBar.GetText()
+		request(url)
 	})
-	engine.Window.ApplicationWindow.ShowAll()
+	window.ApplicationWindow.ShowAll()
 }
