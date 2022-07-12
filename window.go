@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
+	"golang.org/x/net/html"
 	"log"
 )
 
@@ -60,7 +61,11 @@ func setupSearch(window *AppWindow) {
 	window.SearchBar.Connect("activate", func() {
 		println(window.SearchBar.GetText())
 		url, _ := window.SearchBar.GetText()
-		request(url)
+		parse(request(url))
 	})
 	window.ApplicationWindow.ShowAll()
+}
+
+func render(window *AppWindow, node html.Node) {
+
 }
