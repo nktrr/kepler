@@ -15,10 +15,6 @@ const (
 	h2    = "h2"
 )
 
-const (
-	name = "bebra"
-)
-
 func isSupported(tag string) bool {
 	if getType(tag) != "" {
 		return true

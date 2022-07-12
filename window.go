@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"golang.org/x/net/html"
@@ -12,6 +13,7 @@ type AppWindow struct {
 	ApplicationWindow *gtk.ApplicationWindow
 	SearchBar         *gtk.Entry
 	Box               *gtk.Box
+	CurrentPage       *gtk.Box
 }
 
 func createApplication(window AppWindow) {
@@ -25,6 +27,7 @@ func createApplication(window AppWindow) {
 	setupWindow(&window)
 	setupBox(&window, gtk.ORIENTATION_VERTICAL)
 	setupSearch(&window)
+	setupPage(&window)
 	gtk.Main()
 }
 
@@ -61,11 +64,49 @@ func setupSearch(window *AppWindow) {
 	window.SearchBar.Connect("activate", func() {
 		println(window.SearchBar.GetText())
 		url, _ := window.SearchBar.GetText()
-		parse(request(url))
+		render(window, parse(request(url)))
 	})
 	window.ApplicationWindow.ShowAll()
 }
 
-func render(window *AppWindow, node html.Node) {
+func setupPage(window *AppWindow) {
+	box, err := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 0)
+	if err != nil {
+		log.Fatal("Unable to create page box:", err)
+	}
+	window.Box.Add(box)
+	window.CurrentPage = box
+	window.ApplicationWindow.ShowAll()
+}
+
+func render(window *AppWindow, rootNode *html.Node) {
+	var currentBox *gtk.Box
+	currentBox = window.CurrentPage
+	var f func(node *html.Node)
+	f = func(node *html.Node) {
+		if isSupported(node.Data) {
+			switch getType(node.Data) {
+			case p:
+				addText(currentBox, node)
+			}
+		}
+		for c := node.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(rootNode)
+	window.ApplicationWindow.ShowAll()
+}
+
+func addText(box *gtk.Box, node *html.Node) {
+	if node.FirstChild != nil {
+		println("-------------------")
+		println(node.FirstChild.Data)
+		fmt.Printf("%v", node.Attr)
+		println()
+		println("-------------------")
+		label, _ := gtk.LabelNew(node.FirstChild.Data)
+		box.Add(label)
+	}
 
 }
