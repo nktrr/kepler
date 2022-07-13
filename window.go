@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"golang.org/x/net/html"
@@ -14,6 +14,7 @@ type AppWindow struct {
 	SearchBar         *gtk.Entry
 	Box               *gtk.Box
 	CurrentPage       *gtk.Box
+	CssProvider       *gtk.CssProvider
 }
 
 func createApplication(window AppWindow) {
@@ -28,6 +29,7 @@ func createApplication(window AppWindow) {
 	setupBox(&window, gtk.ORIENTATION_VERTICAL)
 	setupSearch(&window)
 	setupPage(&window)
+	setupCss(&window)
 	gtk.Main()
 }
 
@@ -79,6 +81,17 @@ func setupPage(window *AppWindow) {
 	window.ApplicationWindow.ShowAll()
 }
 
+func setupCss(window *AppWindow) {
+	mRefProvider, _ := gtk.CssProviderNew()
+	err := mRefProvider.LoadFromPath("provider.css")
+	if err != nil {
+		log.Fatal(err)
+	}
+	screen, _ := gdk.ScreenGetDefault()
+	gtk.AddProviderForScreen(screen, mRefProvider, 1)
+	window.CssProvider = mRefProvider
+}
+
 func render(window *AppWindow, rootNode *html.Node) {
 	var currentBox *gtk.Box
 	currentBox = window.CurrentPage
@@ -87,7 +100,11 @@ func render(window *AppWindow, rootNode *html.Node) {
 		if isSupported(node.Data) {
 			switch getType(node.Data) {
 			case p:
-				addText(currentBox, node)
+				addP(currentBox, node)
+				break
+			case h1:
+				addH1(currentBox, node)
+				break
 			}
 		}
 		for c := node.FirstChild; c != nil; c = c.NextSibling {
@@ -98,15 +115,24 @@ func render(window *AppWindow, rootNode *html.Node) {
 	window.ApplicationWindow.ShowAll()
 }
 
-func addText(box *gtk.Box, node *html.Node) {
+func addP(box *gtk.Box, node *html.Node) {
 	if node.FirstChild != nil {
-		println("-------------------")
-		println(node.FirstChild.Data)
-		fmt.Printf("%v", node.Attr)
-		println()
-		println("-------------------")
 		label, _ := gtk.LabelNew(node.FirstChild.Data)
+		label.SetHAlign(gtk.ALIGN_START)
 		box.Add(label)
 	}
+}
 
+func addH1(box *gtk.Box, node *html.Node) {
+	if node.FirstChild != nil {
+		label, _ := gtk.LabelNew(node.FirstChild.Data)
+		w, h := label.GetSizeRequest()
+		println(w, h)
+		label.SetSizeRequest(40, 40)
+		w, h = label.GetSizeRequest()
+		println(w, h)
+		label.SetHAlign(gtk.ALIGN_START)
+		label.SetName("h1")
+		box.Add(label)
+	}
 }
