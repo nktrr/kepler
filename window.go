@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
@@ -15,6 +16,7 @@ type AppWindow struct {
 	Box               *gtk.Box
 	CurrentPage       *gtk.Box
 	CssProvider       *gtk.CssProvider
+	CurrentDom        Dom
 }
 
 func createApplication(window AppWindow) {
@@ -66,7 +68,8 @@ func setupSearch(window *AppWindow) {
 	window.SearchBar.Connect("activate", func() {
 		println(window.SearchBar.GetText())
 		url, _ := window.SearchBar.GetText()
-		render(window, parse(request(url)))
+		window.CurrentDom = parseNodesToCNode(parse(request(url)))
+		render(window, window.CurrentDom)
 	})
 	window.ApplicationWindow.ShowAll()
 }
@@ -92,28 +95,34 @@ func setupCss(window *AppWindow) {
 	window.CssProvider = mRefProvider
 }
 
-func render(window *AppWindow, rootNode *html.Node) {
-	var currentBox *gtk.Box
-	currentBox = window.CurrentPage
-	var f func(node *html.Node)
-	f = func(node *html.Node) {
-		if isSupported(node.Data) {
-			switch getType(node.Data) {
-			case p:
-				addP(currentBox, node)
-				break
-			case h1:
-				addH1(currentBox, node)
-				break
-			}
-		}
-		for c := node.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
-	}
-	f(rootNode)
-	window.ApplicationWindow.ShowAll()
+func render(window *AppWindow, node CNode) {
+
 }
+
+//func render(window *AppWindow, rootNode *html.Node) {
+//	var currentBox *gtk.Box
+//	currentBox = window.CurrentPage
+//	var f func(node *html.Node)
+//	f = func(node *html.Node) {
+//		if isSupported(node.Data) {
+//			switch getType(node.Data) {
+//			case p:
+//				addP(currentBox, node)
+//				break
+//			case h1:
+//				addH1(currentBox, node)
+//				break
+//			case div:
+//				addDiv(node)
+//			}
+//		}
+//		for c := node.FirstChild; c != nil; c = c.NextSibling {
+//			f(c)
+//		}
+//	}
+//	f(rootNode)
+//	window.ApplicationWindow.ShowAll()
+//}
 
 func addP(box *gtk.Box, node *html.Node) {
 	if node.FirstChild != nil {
@@ -126,13 +135,14 @@ func addP(box *gtk.Box, node *html.Node) {
 func addH1(box *gtk.Box, node *html.Node) {
 	if node.FirstChild != nil {
 		label, _ := gtk.LabelNew(node.FirstChild.Data)
-		w, h := label.GetSizeRequest()
-		println(w, h)
 		label.SetSizeRequest(40, 40)
-		w, h = label.GetSizeRequest()
-		println(w, h)
 		label.SetHAlign(gtk.ALIGN_START)
 		label.SetName("h1")
 		box.Add(label)
 	}
+}
+
+func addDiv(node *html.Node) {
+	fmt.Printf("%v", node.Attr)
+	println()
 }
